@@ -6,8 +6,14 @@ $Remote = "root@39.97.234.200"
 $WebRoot = "/var/www/embedded-ai-kit"
 
 Write-Host "Uploading web files to ${Remote}:${WebRoot} ..."
+$ver = Get-Date -Format "yyyyMMddHHmm"
+$html = Get-Content (Join-Path $Root "index.html") -Raw -Encoding UTF8
+$html = $html -replace 'styles\.css\?v=[^"]+', "styles.css?v=$ver"
+$html = $html -replace 'app\.js\?v=[^"]+', "app.js?v=$ver"
+Set-Content (Join-Path $Root ".index.deploy.html") -Value $html -Encoding UTF8 -NoNewline
 ssh $Remote "mkdir -p $WebRoot/downloads"
-scp "$Root\index.html" "$Root\styles.css" "$Root\app.js" "${Remote}:${WebRoot}/"
+scp (Join-Path $Root ".index.deploy.html") "${Remote}:${WebRoot}/index.html"
+scp "$Root\styles.css" "$Root\app.js" "${Remote}:${WebRoot}/"
 scp "$Root\downloads\manifest.json" "$Root\downloads\README.md" "${Remote}:${WebRoot}/downloads/"
 scp "$Root\embedded-ai-kit-web.service" "${Remote}:/etc/systemd/system/embedded-ai-kit-web.service"
 

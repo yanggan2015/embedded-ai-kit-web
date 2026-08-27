@@ -14,6 +14,10 @@ server {
     root /var/www/embedded-ai-kit;
     index index.html;
 
+    location = /index.html {
+        add_header Cache-Control "no-cache, must-revalidate";
+    }
+
     location / {
         try_files $uri $uri/ =404;
     }

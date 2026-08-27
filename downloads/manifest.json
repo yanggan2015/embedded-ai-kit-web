@@ -1,0 +1,21 @@
+{
+  "updated": null,
+  "packages": [
+    {
+      "id": "relay-c",
+      "name": "relay-c",
+      "version": null,
+      "file": null,
+      "filename": null,
+      "note": "Place zip under downloads/ and set file/version here."
+    },
+    {
+      "id": "ssh-bridge-c",
+      "name": "ssh-bridge-c",
+      "version": null,
+      "file": null,
+      "filename": null,
+      "note": "Place zip under downloads/ and set file/version here."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+[Unit]
+Description=Embedded AI Development Kit product website
+Documentation=file:///var/www/embedded-ai-kit/
+After=network-online.target
+Wants=network-online.target
+Requires=nginx.service
+After=nginx.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/var/www/embedded-ai-kit
+ExecStartPre=/usr/bin/test -f /var/www/embedded-ai-kit/index.html
+ExecStartPre=/usr/sbin/nginx -t
+ExecStart=/bin/systemctl start nginx
+ExecReload=/bin/systemctl reload nginx
+ExecStop=/bin/true
+
+[Install]
+WantedBy=multi-user.target

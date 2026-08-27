@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>分布式嵌入式调试架构 · 本地预览</title>
+  <style>
+    :root {
+      --bg: #0c1017;
+      --panel: #151b26;
+      --border: #2a3548;
+      --text: #e8edf4;
+      --muted: #8b9cb3;
+      --human: #a78bfa;
+      --human-dim: rgba(167,139,250,0.12);
+      --ai: #34d399;
+      --ai-dim: rgba(52,211,153,0.12);
+      --relay: #fbbf24;
+      --relay-dim: rgba(251,191,36,0.12);
+      --bridge: #38bdf8;
+      --bridge-dim: rgba(56,189,248,0.12);
+      --hw: #fb923c;
+      --board-net: #f472b6;
+      --mono: "Cascadia Code","JetBrains Mono",Consolas,monospace;
+      --sans: "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 28px 20px 56px;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+
+    .header {
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .header .sub { color: var(--muted); font-size: 0.9rem; }
+    .badge {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: var(--bridge-dim);
+      color: var(--bridge);
+      border: 1px solid rgba(56,189,248,0.3);
+    }
+
+    /* ── Concept summary ── */
+    .concept {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 28px;
+      margin-bottom: 36px;
+    }
+    .concept h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--bridge);
+    }
+    .concept-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px 28px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 720px) { .concept-grid { grid-template-columns: 1fr; } }
+
+    .concept-block h3 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .concept-block.human h3 { color: var(--human); }
+    .concept-block.ai h3 { color: var(--ai); }
+    .concept-block p, .concept-block li {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    .concept-block ul { padding-left: 1.1rem; margin-top: 6px; }
+    .concept-block li { margin-bottom: 4px; }
+
+    .diagram-plan {
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    .diagram-plan ol { padding-left: 1.2rem; margin-top: 8px; }
+    .diagram-plan li { margin-bottom: 6px; }
+    .diagram-plan strong { color: var(--text); }
+
+    /* ── Diagram sections ── */
+    .diagram-section {
+      margin-bottom: 40px;
+    }
+    .diagram-section h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .diagram-num {
+      display: inline-grid;
+      place-items: center;
+      width: 26px; height: 26px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: var(--border);
+      border-radius: 6px;
+      color: var(--text);
+    }
+    .diagram-desc {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+      max-width: 52rem;
+    }
+
+    .canvas {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 16px;
+      overflow-x: auto;
+    }
+    svg {
+      display: block;
+      width: 100%;
+      min-width: 880px;
+      height: auto;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px 22px;
+      margin-bottom: 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .legend span { display: flex; align-items: center; gap: 6px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .dot-human { background: var(--human); }
+    .dot-ai { background: var(--ai); }
+    .dot-relay { background: var(--relay); }
+    .dot-bridge { background: var(--bridge); }
+    .dot-hw { background: var(--hw); }
+    .dot-net { background: var(--board-net); }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.85em;
+      background: rgba(255,255,255,0.06);
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="header">
+    <h1>分布式嵌入式调试架构</h1>
+    <p class="sub">relay-c + ssh-bridge-c · 人机分工 · AI 可本地/远程 · 支持人为旁观</p>
+    <span class="badge">LOCAL PREVIEW · 确认后再合入主页</span>
+  </header>
+
+  <!-- 设想梳理 -->
+  <section class="concept">
+    <h2>你的设想 · 梳理</h2>
+    <div class="concept-grid">
+      <div class="concept-block human">
+        <h3>👤 给人用的通道</h3>
+        <ul>
+          <li><strong>relay-c 网页</strong>：手动点复位、进烧录模式、看状态</li>
+          <li><strong>ssh-bridge 网页</strong>：Dashboard 查看串口执行状态、配置通道</li>
+          <li><strong>SSH 连串口</strong>：PuTTY / ssh.exe 登录本地映射端口，人工交互 Shell</li>
+          <li><strong>SSH 跳板 → 板卡网口</strong>：板子起来后，连板载 Linux 的 SSH（以太网）</li>
+        </ul>
+      </div>
+      <div class="concept-block ai">
+        <h3>🤖 给 AI Agent 用的通道</h3>
+        <ul>
+          <li><strong>relay-c HTTP API</strong>：curl 触发上电/断电/reset/upgrade_mode</li>
+          <li><strong>ssh-bridge 串口 HTTP 接口</strong>：发指令、读输出，无需交互式 TTY</li>
+          <li>AI 可跑在<strong>接板子的调试主机</strong>，也可跑在<strong>远程服务器</strong></li>
+          <li>远程 AI 通过 HTTP 调调试主机上的 relay / bridge 接口，实现分布式控板</li>
+        </ul>
+      </div>
+    </div>
+    <p style="font-size:0.875rem;color:var(--muted);margin-bottom:12px;">
+      核心思想：<strong>板子</strong>和<strong>AI Agent</strong>都可以物理分离；relay 管「电源与时序」，ssh-bridge 管「串口数据面」；
+      人走 Web / 交互 SSH，AI 走 HTTP API；人可随时打开网页旁观串口状态，与 AI 自动化并行。
+    </p>
+    <div class="diagram-plan">
+      <strong>建议画 3 张图（各回答一个问题）：</strong>
+      <ol>
+        <li><strong>图 1 · 角色与接口</strong> — 谁用什么协议、控制什么（人机分工矩阵）</li>
+        <li><strong>图 2 · 分布式拓扑</strong> — 调试主机 / 远程 AI / 远程人 / 板卡网口 SSH 如何分布</li>
+        <li><strong>图 3 · 典型协同链路</strong> — 一次完整调试中 AI 自动化 + 人旁观 + 跳板 SSH 如何配合</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 图 1 -->
+  <section class="diagram-section">
+    <h2><span class="diagram-num">1</span> 角色与接口分工</h2>
+    <p class="diagram-desc">同一套服务，不同入口服务不同角色。relay 管硬件时序，ssh-bridge 管串口数据；HTTP 归 AI，Web/SSH 归人。</p>
+    <div class="legend">
+      <span><i class="dot dot-human"></i> 人</span>
+      <span><i class="dot dot-ai"></i> AI Agent</span>
+      <span><i class="dot dot-relay"></i> relay-c</span>
+      <span><i class="dot dot-bridge"></i> ssh-bridge-c</span>
+      <span><i class="dot dot-hw"></i> 板卡/继电器</span>
+    </div>
+    <div class="canvas">
+      <svg viewBox="0 0 920 480" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ah" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#a78bfa"/></marker>
+          <marker id="aa" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#34d399"/></marker>
+          <marker id="ar" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#fbbf24"/></marker>
+          <marker id="ab" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#38bdf8"/></marker>
+        </defs>
+
+        <!-- Actors column -->
+        <text x="100" y="36" text-anchor="middle" fill="#8b9cb3" font-size="10" font-weight="600">操作者</text>
+        <rect x="40" y="50" width="120" height="56" rx="8" fill="rgba(167,139,250,0.12)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="100" y="76" text-anchor="middle" fill="#e8edf4" font-size="13" font-weight="600">人</text>
+        <text x="100" y="94" text-anchor="middle" fill="#8b9cb3" font-size="10">Web · SSH</text>
+
+        <rect x="40" y="130" width="120" height="56" rx="8" fill="rgba(52,211,153,0.12)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="100" y="156" text-anchor="middle" fill="#e8edf4" font-size="13" font-weight="600">AI Agent</text>
+        <text x="100" y="174" text-anchor="middle" fill="#8b9cb3" font-size="10">HTTP API</text>
+
+        <!-- Services column -->
+        <text x="380" y="36" text-anchor="middle" fill="#8b9cb3" font-size="10" font-weight="600">调试主机上的服务</text>
+
+        <!-- relay-c box -->
+        <rect x="260" y="50" width="240" height="150" rx="10" fill="#1a1510" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="380" y="74" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="700">relay-c</text>
+        <text x="380" y="92" text-anchor="middle" fill="#8b9cb3" font-size="10">:18053</text>
+        <rect x="278" y="102" width="90" height="36" rx="5" fill="rgba(167,139,250,0.15)" stroke="#a78bfa"/>
+        <text x="323" y="118" text-anchor="middle" fill="#a78bfa" font-size="9" font-weight="600">Web 控制页</text>
+        <text x="323" y="130" text-anchor="middle" fill="#8b9cb3" font-size="8">人 · 点按钮</text>
+        <rect x="382" y="102" width="100" height="36" rx="5" fill="rgba(52,211,153,0.15)" stroke="#34d399"/>
+        <text x="432" y="118" text-anchor="middle" fill="#34d399" font-size="9" font-weight="600">HTTP API</text>
+        <text x="432" y="130" text-anchor="middle" fill="#8b9cb3" font-size="8">AI · curl</text>
+        <text x="380" y="168" text-anchor="middle" fill="#8b9cb3" font-size="9">→ 电源 · reset · upgrade_mode</text>
+        <text x="380" y="184" text-anchor="middle" fill="#8b9cb3" font-size="9">→ USB 继电器模块</text>
+
+        <!-- ssh-bridge box -->
+        <rect x="260" y="220" width="240" height="200" rx="10" fill="#101820" stroke="#38bdf8" stroke-width="1.5"/>
+        <text x="380" y="244" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="700">ssh-bridge-c</text>
+        <text x="380" y="262" text-anchor="middle" fill="#8b9cb3" font-size="10">:18082</text>
+        <rect x="278" y="272" width="90" height="36" rx="5" fill="rgba(167,139,250,0.15)" stroke="#a78bfa"/>
+        <text x="323" y="288" text-anchor="middle" fill="#a78bfa" font-size="9" font-weight="600">Web Dashboard</text>
+        <text x="323" y="300" text-anchor="middle" fill="#8b9cb3" font-size="8">人 · 旁观状态</text>
+        <rect x="278" y="316" width="90" height="36" rx="5" fill="rgba(167,139,250,0.15)" stroke="#a78bfa"/>
+        <text x="323" y="332" text-anchor="middle" fill="#a78bfa" font-size="9" font-weight="600">SSH → 串口</text>
+        <text x="323" y="344" text-anchor="middle" fill="#8b9cb3" font-size="8">人 · 交互 Shell</text>
+        <rect x="382" y="272" width="100" height="80" rx="5" fill="rgba(52,211,153,0.15)" stroke="#34d399"/>
+        <text x="432" y="292" text-anchor="middle" fill="#34d399" font-size="9" font-weight="600">串口 HTTP 接口</text>
+        <text x="432" y="308" text-anchor="middle" fill="#8b9cb3" font-size="8">AI · 发令/读回</text>
+        <text x="432" y="322" text-anchor="middle" fill="#8b9cb3" font-size="8">非交互自动化</text>
+        <text x="432" y="338" text-anchor="middle" fill="#8b9cb3" font-size="8">COM → HTTP</text>
+        <text x="380" y="378" text-anchor="middle" fill="#8b9cb3" font-size="9">→ 板卡串口 Console</text>
+        <text x="380" y="394" text-anchor="middle" fill="#8b9cb3" font-size="9">→ 可选 SSH Link 远程主机</text>
+
+        <!-- Hardware column -->
+        <text x="720" y="36" text-anchor="middle" fill="#8b9cb3" font-size="10" font-weight="600">板卡侧</text>
+        <rect x="620" y="80" width="200" height="70" rx="8" fill="#241a10" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="720" y="108" text-anchor="middle" fill="#fb923c" font-size="12" font-weight="600">目标板卡</text>
+        <text x="720" y="128" text-anchor="middle" fill="#8b9cb3" font-size="10">电源线 · 串口 · 网口</text>
+
+        <rect x="640" y="170" width="80" height="44" rx="6" fill="#1a1510" stroke="#fbbf24"/>
+        <text x="680" y="190" text-anchor="middle" fill="#fbbf24" font-size="9">电源/烧录</text>
+        <text x="680" y="204" text-anchor="middle" fill="#8b9cb3" font-size="8">继电器控制</text>
+
+        <rect x="640" y="230" width="80" height="44" rx="6" fill="#101820" stroke="#38bdf8"/>
+        <text x="680" y="250" text-anchor="middle" fill="#38bdf8" font-size="9">串口</text>
+        <text x="680" y="264" text-anchor="middle" fill="#8b9cb3" font-size="8">Console</text>
+
+        <rect x="640" y="290" width="80" height="44" rx="6" fill="#1a1020" stroke="#f472b6"/>
+        <text x="680" y="310" text-anchor="middle" fill="#f472b6" font-size="9">网口 SSH</text>
+        <text x="680" y="324" text-anchor="middle" fill="#8b9cb3" font-size="8">板载 Linux</text>
+
+        <!-- Human lines -->
+        <line x1="160" y1="78" x2="276" y2="120" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="160" y1="78" x2="200" y2="78" stroke="#a78bfa" stroke-width="1.5"/>
+        <line x1="200" y1="78" x2="200" y2="290" stroke="#a78bfa" stroke-width="1.5"/>
+        <line x1="200" y1="290" x2="276" y2="290" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+        <line x1="160" y1="78" x2="200" y2="78" stroke="#a78bfa" stroke-width="1.5"/>
+        <line x1="200" y1="78" x2="200" y2="334" stroke="#a78bfa" stroke-width="1.5"/>
+        <line x1="200" y1="334" x2="276" y2="334" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- AI lines -->
+        <line x1="160" y1="158" x2="220" y2="158" stroke="#34d399" stroke-width="1.5"/>
+        <line x1="220" y1="158" x2="220" y2="120" stroke="#34d399" stroke-width="1.5"/>
+        <line x1="220" y1="120" x2="380" y2="120" stroke="#34d399" stroke-width="1.5" marker-end="url(#aa)"/>
+        <line x1="160" y1="158" x2="220" y2="158" stroke="#34d399" stroke-width="1.5"/>
+        <line x1="220" y1="158" x2="220" y2="312" stroke="#34d399" stroke-width="1.5"/>
+        <line x1="220" y1="312" x2="380" y2="312" stroke="#34d399" stroke-width="1.5" marker-end="url(#aa)"/>
+
+        <!-- Service to hardware -->
+        <line x1="500" y1="170" x2="638" y2="192" stroke="#fbbf24" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="500" y1="340" x2="638" y2="252" stroke="#38bdf8" stroke-width="2" marker-end="url(#ab)"/>
+
+        <!-- Human SSH to board net (dashed) -->
+        <path d="M 160 78 Q 160 420 638 312" fill="none" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ah)"/>
+        <text x="400" y="448" text-anchor="middle" fill="#a78bfa" font-size="9">人 · SSH 跳板 → 板卡网口（板子启动后）</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 图 2 -->
+  <section class="diagram-section">
+    <h2><span class="diagram-num">2</span> 分布式部署拓扑</h2>
+    <p class="diagram-desc">AI Agent 可在调试主机本地运行，也可在远程服务器；远程 AI 通过 HTTP 调调试主机 API。人与 AI 均可分布式，板卡只需物理连接到调试主机。</p>
+    <div class="legend">
+      <span><i class="dot dot-human"></i> 人（可远程）</span>
+      <span><i class="dot dot-ai"></i> AI（可远程）</span>
+      <span><i class="dot dot-hw"></i> 调试主机</span>
+      <span><i class="dot dot-net"></i> 板卡网口</span>
+    </div>
+    <div class="canvas">
+      <svg viewBox="0 0 920 520" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="b1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#34d399"/></marker>
+          <marker id="b2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#a78bfa"/></marker>
+          <marker id="b3" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#38bdf8"/></marker>
+        </defs>
+
+        <!-- Remote cloud zone -->
+        <rect x="40" y="30" width="840" height="130" rx="10" fill="#101820" stroke="#2a3548" stroke-dasharray="5 4"/>
+        <text x="56" y="52" fill="#8b9cb3" font-size="10" font-weight="600">远程 / 云端（可选）</text>
+
+        <rect x="80" y="70" width="140" height="64" rx="8" fill="rgba(52,211,153,0.1)" stroke="#34d399"/>
+        <text x="150" y="96" text-anchor="middle" fill="#34d399" font-size="12" font-weight="600">AI Agent</text>
+        <text x="150" y="114" text-anchor="middle" fill="#8b9cb3" font-size="10">远程服务器</text>
+        <text x="150" y="126" text-anchor="middle" fill="#8b9cb3" font-size="9">CI · 云 LLM · 编排</text>
+
+        <rect x="280" y="70" width="140" height="64" rx="8" fill="rgba(167,139,250,0.1)" stroke="#a78bfa"/>
+        <text x="350" y="96" text-anchor="middle" fill="#a78bfa" font-size="12" font-weight="600">工程师</text>
+        <text x="350" y="114" text-anchor="middle" fill="#8b9cb3" font-size="10">远程办公</text>
+        <text x="350" y="126" text-anchor="middle" fill="#8b9cb3" font-size="9">浏览器 · SSH 客户端</text>
+
+        <text x="520" y="100" fill="#8b9cb3" font-size="10">HTTP API 控板</text>
+        <text x="520" y="116" fill="#8b9cb3" font-size="10">Web 旁观 · SSH 串口/跳板</text>
+
+        <!-- Debug host zone -->
+        <rect x="40" y="190" width="840" height="200" rx="10" fill="#141c28" stroke="#38bdf8" stroke-width="1.5"/>
+        <text x="56" y="212" fill="#38bdf8" font-size="10" font-weight="600">调试主机 · Windows（接板子的那台 PC）</text>
+
+        <rect x="80" y="230" width="120" height="52" rx="6" fill="rgba(52,211,153,0.1)" stroke="#34d399"/>
+        <text x="140" y="254" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">AI Agent</text>
+        <text x="140" y="270" text-anchor="middle" fill="#8b9cb3" font-size="9">本地运行</text>
+
+        <rect x="240" y="224" width="130" height="64" rx="6" fill="#1a1510" stroke="#fbbf24"/>
+        <text x="305" y="248" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="700">relay-c</text>
+        <text x="305" y="264" text-anchor="middle" fill="#8b9cb3" font-size="9">Web + HTTP API</text>
+        <text x="305" y="278" text-anchor="middle" fill="#8b9cb3" font-size="9">:18053</text>
+
+        <rect x="400" y="224" width="150" height="64" rx="6" fill="#101820" stroke="#38bdf8"/>
+        <text x="475" y="248" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="700">ssh-bridge-c</text>
+        <text x="475" y="264" text-anchor="middle" fill="#8b9cb3" font-size="9">Web + SSH + 串口HTTP</text>
+        <text x="475" y="278" text-anchor="middle" fill="#8b9cb3" font-size="9">:18082</text>
+
+        <rect x="580" y="230" width="120" height="52" rx="6" fill="rgba(167,139,250,0.1)" stroke="#a78bfa"/>
+        <text x="640" y="254" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="600">工程师</text>
+        <text x="640" y="270" text-anchor="middle" fill="#8b9cb3" font-size="9">现场操作</text>
+
+        <rect x="740" y="230" width="100" height="52" rx="6" fill="#1a1510" stroke="#fb923c"/>
+        <text x="790" y="254" text-anchor="middle" fill="#fb923c" font-size="10" font-weight="600">USB 继电器</text>
+        <text x="790" y="270" text-anchor="middle" fill="#8b9cb3" font-size="9">电源/烧录</text>
+
+        <!-- Local AI to services -->
+        <line x1="200" y1="256" x2="238" y2="256" stroke="#34d399" stroke-width="1.5" marker-end="url(#b1)"/>
+        <line x1="200" y1="256" x2="220" y2="256" stroke="#34d399" stroke-width="1.5"/>
+        <line x1="220" y1="256" x2="220" y2="256" stroke="#34d399" stroke-width="1.5"/>
+        <line x1="200" y1="256" x2="220" y2="256" stroke="#34d399" stroke-width="1.5"/>
+        <line x1="220" y1="256" x2="220" y2="256" stroke="#34d399"/>
+        <line x1="200" y1="256" x2="398" y2="256" stroke="#34d399" stroke-width="1.5" marker-end="url(#b1)"/>
+
+        <!-- Remote AI HTTP over network -->
+        <line x1="150" y1="134" x2="150" y2="170" stroke="#34d399" stroke-width="1.5"/>
+        <line x1="150" y1="170" x2="305" y2="170" stroke="#34d399" stroke-width="1.5"/>
+        <line x1="305" y1="170" x2="305" y2="222" stroke="#34d399" stroke-width="1.5" marker-end="url(#b1)"/>
+        <line x1="150" y1="170" x2="475" y2="170" stroke="#34d399" stroke-width="1.5"/>
+        <line x1="475" y1="170" x2="475" y2="222" stroke="#34d399" stroke-width="1.5" marker-end="url(#b1)"/>
+        <text x="320" y="162" fill="#34d399" font-size="9">HTTP over LAN/VPN</text>
+
+        <!-- Remote human -->
+        <line x1="350" y1="134" x2="350" y2="170" stroke="#a78bfa" stroke-width="1.5"/>
+        <line x1="350" y1="170" x2="640" y2="170" stroke="#a78bfa" stroke-width="1.5"/>
+        <line x1="640" y1="170" x2="640" y2="228" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#b2)"/>
+        <line x1="350" y1="170" x2="475" y2="170" stroke="#a78bfa" stroke-width="1.5"/>
+        <line x1="475" y1="170" x2="475" y2="222" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#b2)"/>
+        <text x="500" y="162" fill="#a78bfa" font-size="9">Web / SSH over network</text>
+
+        <!-- relay to relay hw, bridge to serial -->
+        <line x1="370" y1="288" x2="738" y2="288" stroke="#fbbf24" stroke-width="2" marker-end="url(#ar)"/>
+
+        <!-- Board zone -->
+        <rect x="40" y="420" width="840" height="80" rx="10" fill="#1a1510" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="56" y="442" fill="#fb923c" font-size="10" font-weight="600">目标板卡（物理连接在调试主机旁）</text>
+
+        <rect x="200" y="456" width="160" height="32" rx="5" fill="#241a10" stroke="#fbbf24"/>
+        <text x="280" y="476" text-anchor="middle" fill="#fbbf24" font-size="10">电源 / 烧录模式 ← relay</text>
+
+        <rect x="420" y="456" width="160" height="32" rx="5" fill="#101820" stroke="#38bdf8"/>
+        <text x="500" y="476" text-anchor="middle" fill="#38bdf8" font-size="10">串口 Console ← ssh-bridge</text>
+
+        <rect x="640" y="456" width="180" height="32" rx="5" fill="#1a1020" stroke="#f472b6"/>
+        <text x="730" y="476" text-anchor="middle" fill="#f472b6" font-size="10">网口 SSH ← 跳板 / 直连</text>
+
+        <!-- bridge down to board serial -->
+        <line x1="475" y1="288" x2="475" y2="400" stroke="#38bdf8" stroke-width="2"/>
+        <line x1="475" y1="400" x2="500" y2="400" stroke="#38bdf8" stroke-width="2"/>
+        <line x1="500" y1="400" x2="500" y2="454" stroke="#38bdf8" stroke-width="2" marker-end="url(#b3)"/>
+
+        <!-- relay down -->
+        <line x1="305" y1="288" x2="305" y2="400" stroke="#fbbf24" stroke-width="2"/>
+        <line x1="305" y1="400" x2="280" y2="400" stroke="#fbbf24" stroke-width="2"/>
+        <line x1="280" y1="400" x2="280" y2="454" stroke="#fbbf24" stroke-width="2" marker-end="url(#ar)"/>
+
+        <!-- Jump SSH from remote/local human to board net -->
+        <path d="M 640 282 Q 780 350 730 454" fill="none" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#b2)"/>
+        <path d="M 350 134 Q 800 300 730 454" fill="none" stroke="#f472b6" stroke-width="1.2" stroke-dasharray="4 4"/>
+        <text x="780" y="400" fill="#f472b6" font-size="9">SSH 跳板</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 图 3 -->
+  <section class="diagram-section">
+    <h2><span class="diagram-num">3</span> 典型协同链路（AI 自动化 + 人旁观）</h2>
+    <p class="diagram-desc">一次完整分布式调试的时间线：AI 走 HTTP 闭环，人随时 Web 看串口状态，必要时 SSH 介入或跳板登录板载系统。</p>
+    <div class="canvas">
+      <svg viewBox="0 0 920 380" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="c1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#64748b"/></marker>
+          <marker id="c2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#34d399"/></marker>
+          <marker id="c3" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#a78bfa"/></marker>
+        </defs>
+
+        <!-- Timeline bar -->
+        <line x1="60" y1="60" x2="860" y2="60" stroke="#2a3548" stroke-width="3"/>
+        <text x="60" y="40" fill="#8b9cb3" font-size="10" font-weight="600">时间 →</text>
+
+        <!-- Step 1 -->
+        <circle cx="120" cy="60" r="14" fill="#34d399"/>
+        <text x="120" y="65" text-anchor="middle" fill="#0c1017" font-size="11" font-weight="700">1</text>
+        <rect x="70" y="88" width="100" height="72" rx="6" fill="#1a1510" stroke="#fbbf24"/>
+        <text x="120" y="108" text-anchor="middle" fill="#fbbf24" font-size="9" font-weight="700">AI</text>
+        <text x="120" y="124" text-anchor="middle" fill="#e8edf4" font-size="9">relay HTTP</text>
+        <text x="120" y="138" text-anchor="middle" fill="#8b9cb3" font-size="8">上电 / reset</text>
+        <text x="120" y="152" text-anchor="middle" fill="#8b9cb3" font-size="8">curl API</text>
+
+        <!-- Step 2 -->
+        <circle cx="280" cy="60" r="14" fill="#34d399"/>
+        <text x="280" y="65" text-anchor="middle" fill="#0c1017" font-size="11" font-weight="700">2</text>
+        <rect x="220" y="88" width="120" height="72" rx="6" fill="#101820" stroke="#38bdf8"/>
+        <text x="280" y="108" text-anchor="middle" fill="#38bdf8" font-size="9" font-weight="700">AI</text>
+        <text x="280" y="124" text-anchor="middle" fill="#e8edf4" font-size="9">串口 HTTP</text>
+        <text x="280" y="138" text-anchor="middle" fill="#8b9cb3" font-size="8">发 U-Boot 命令</text>
+        <text x="280" y="152" text-anchor="middle" fill="#8b9cb3" font-size="8">读输出判断</text>
+
+        <!-- Step 3 human observe -->
+        <circle cx="440" cy="60" r="14" fill="#a78bfa"/>
+        <text x="440" y="65" text-anchor="middle" fill="#0c1017" font-size="11" font-weight="700">3</text>
+        <rect x="380" y="88" width="120" height="72" rx="6" fill="rgba(167,139,250,0.1)" stroke="#a78bfa"/>
+        <text x="440" y="108" text-anchor="middle" fill="#a78bfa" font-size="9" font-weight="700">人 · 旁观</text>
+        <text x="440" y="124" text-anchor="middle" fill="#e8edf4" font-size="9">Web Dashboard</text>
+        <text x="440" y="138" text-anchor="middle" fill="#8b9cb3" font-size="8">看串口执行状态</text>
+        <text x="440" y="152" text-anchor="middle" fill="#8b9cb3" font-size="8">与 AI 并行</text>
+
+        <!-- Step 4 AI flash mode -->
+        <circle cx="580" cy="60" r="14" fill="#34d399"/>
+        <text x="580" y="65" text-anchor="middle" fill="#0c1017" font-size="11" font-weight="700">4</text>
+        <rect x="520" y="88" width="120" height="72" rx="6" fill="#1a1510" stroke="#fbbf24"/>
+        <text x="580" y="108" text-anchor="middle" fill="#fbbf24" font-size="9" font-weight="700">AI</text>
+        <text x="580" y="124" text-anchor="middle" fill="#e8edf4" font-size="9">relay HTTP</text>
+        <text x="580" y="138" text-anchor="middle" fill="#8b9cb3" font-size="8">upgrade_mode</text>
+        <text x="580" y="152" text-anchor="middle" fill="#8b9cb3" font-size="8">进烧录模式</text>
+
+        <!-- Step 5 human SSH optional -->
+        <circle cx="720" cy="60" r="14" fill="#a78bfa"/>
+        <text x="720" y="65" text-anchor="middle" fill="#0c1017" font-size="11" font-weight="700">5</text>
+        <rect x="660" y="88" width="120" height="72" rx="6" fill="rgba(167,139,250,0.1)" stroke="#a78bfa"/>
+        <text x="720" y="108" text-anchor="middle" fill="#a78bfa" font-size="9" font-weight="700">人 · 介入</text>
+        <text x="720" y="124" text-anchor="middle" fill="#e8edf4" font-size="9">SSH 串口 / 跳板</text>
+        <text x="720" y="138" text-anchor="middle" fill="#8b9cb3" font-size="8">AI 搞不定时</text>
+        <text x="720" y="152" text-anchor="middle" fill="#8b9cb3" font-size="8">人工 Shell</text>
+
+        <!-- Step 6 board net -->
+        <circle cx="860" cy="60" r="14" fill="#f472b6"/>
+        <text x="860" y="65" text-anchor="middle" fill="#0c1017" font-size="11" font-weight="700">6</text>
+        <rect x="800" y="88" width="100" height="72" rx="6" fill="#1a1020" stroke="#f472b6"/>
+        <text x="850" y="108" text-anchor="middle" fill="#f472b6" font-size="9" font-weight="700">板载</text>
+        <text x="850" y="124" text-anchor="middle" fill="#e8edf4" font-size="9">网口 SSH</text>
+        <text x="850" y="138" text-anchor="middle" fill="#8b9cb3" font-size="8">系统起来后</text>
+        <text x="850" y="152" text-anchor="middle" fill="#8b9cb3" font-size="8">AI/人皆可</text>
+
+        <!-- Arrows between steps -->
+        <line x1="134" y1="60" x2="266" y2="60" stroke="#64748b" stroke-width="2" marker-end="url(#c1)"/>
+        <line x1="294" y1="60" x2="426" y2="60" stroke="#64748b" stroke-width="2" marker-end="url(#c1)"/>
+        <line x1="454" y1="60" x2="566" y2="60" stroke="#64748b" stroke-width="2" marker-end="url(#c1)"/>
+        <line x1="594" y1="60" x2="706" y2="60" stroke="#64748b" stroke-width="2" marker-end="url(#c1)"/>
+        <line x1="734" y1="60" x2="846" y2="60" stroke="#64748b" stroke-width="2" marker-end="url(#c1)"/>
+
+        <!-- Bottom: parallel tracks -->
+        <rect x="60" y="200" width="800" height="150" rx="10" fill="#141c28" stroke="#2a3548"/>
+        <text x="80" y="224" fill="#8b9cb3" font-size="10" font-weight="600">并行关系（非互斥）</text>
+
+        <rect x="80" y="240" width="360" height="90" rx="8" fill="rgba(52,211,153,0.08)" stroke="#34d399"/>
+        <text x="260" y="264" text-anchor="middle" fill="#34d399" font-size="11" font-weight="700">AI 自动化轨道</text>
+        <text x="100" y="286" fill="#8b9cb3" font-size="10">relay HTTP → 电源/烧录时序</text>
+        <text x="100" y="304" fill="#8b9cb3" font-size="10">bridge 串口 HTTP → 发令/读回/闭环</text>
+        <text x="100" y="322" fill="#8b9cb3" font-size="10">可在本地或远程，统一走 HTTP</text>
+
+        <rect x="460" y="240" width="380" height="90" rx="8" fill="rgba(167,139,250,0.08)" stroke="#a78bfa"/>
+        <text x="650" y="264" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="700">人工轨道（随时可介入）</text>
+        <text x="480" y="286" fill="#8b9cb3" font-size="10">Web 旁观串口状态 · relay/bridge 控制页</text>
+        <text x="480" y="304" fill="#8b9cb3" font-size="10">SSH 交互串口 · 板子起来后 SSH 跳板网口</text>
+        <text x="480" y="322" fill="#8b9cb3" font-size="10">与 AI 并行，不阻塞自动化</text>
+      </svg>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

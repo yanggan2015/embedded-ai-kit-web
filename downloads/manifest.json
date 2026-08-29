@@ -12,10 +12,9 @@
     {
       "id": "ssh-bridge-c",
       "name": "ssh-bridge-c",
-      "version": null,
-      "file": null,
-      "filename": null,
-      "note": "Place zip under downloads/ and set file/version here."
+      "version": "20260815-150649",
+      "file": "https://github.com/yanggan2015/ssh-bridge-c-releases/releases/download/v20260815-150649/ssh_bridge_manager-windows-20260815-150649.zip",
+      "filename": "ssh_bridge_manager-windows-20260815-150649.zip"
     }
   ]
 }

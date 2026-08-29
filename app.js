@@ -21,14 +21,18 @@ async function loadDownloads() {
     const linkEl = row.querySelector('[data-download]');
     if (!pkg || !pkg.file) return;
 
-    const href = 'downloads/' + encodeURIComponent(pkg.file);
+    const href = /^https?:\/\//i.test(pkg.file)
+      ? pkg.file
+      : 'downloads/' + encodeURIComponent(pkg.file);
     const version = pkg.version ? (' v' + pkg.version) : '';
-    statusEl.textContent = '可下载' + version;
+    statusEl.textContent = '测试版' + version;
     statusEl.classList.remove('soon');
     statusEl.classList.add('ready');
     linkEl.href = href;
     linkEl.hidden = false;
-    if (pkg.filename) linkEl.setAttribute('download', pkg.filename);
+    if (pkg.filename && !/^https?:\/\//i.test(pkg.file)) {
+      linkEl.setAttribute('download', pkg.filename);
+    }
   });
 }
 

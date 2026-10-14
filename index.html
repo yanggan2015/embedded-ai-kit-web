@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Embedded AI Development Kit</title>
-  <meta name="description" content="Embedded AI Development Kit：分布式嵌入式调试。AI 自动化与人机并行，远程可控、随时旁观。">
+  <meta name="description" content="Embedded AI Development Kit：人与 AI 并行调试嵌入式板卡。Kit 服务化电源/Upgrade/串口，支持网口 SSH 与 HTTP→串口两条控板路径，同机或分布式部署。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1">
+  <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
 
@@ -25,7 +25,7 @@
       </a>
       <nav class="header-nav">
         <a href="#highlights">亮点</a>
-        <a href="#architecture">架构</a>
+        <a href="#architecture">框图</a>
         <a href="#products">产品</a>
         <a href="#downloads">下载</a>
       </nav>
@@ -38,12 +38,12 @@
       <div class="wrap hero-inner">
         <h1>嵌入式调试，<span class="grad">AI 与人同时在线</span></h1>
         <p class="lead">
-          板卡、AI Agent、工程师可以在<strong>不同机器、不同网段</strong>协同工作。
-          硬件时序与串口数据面分离，自动化与人工介入<strong>并行不互斥</strong>。
+          板卡标准口（串口 · 网口 · Upgrade · 电源）经 Kit 服务化；
+          人与 AI 可用 <strong>HTTP 转串口</strong> 或 <strong>网口 SSH</strong> 控板，<strong>并行不互斥</strong>。
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#highlights">核心亮点</a>
-          <a class="btn btn-secondary" href="#architecture">架构图</a>
+          <a class="btn btn-secondary" href="#architecture">设计框图</a>
           <a class="btn btn-secondary" href="#downloads">下载</a>
         </div>
       </div>
@@ -55,21 +55,21 @@
           <article class="highlight-card">
             <span class="highlight-num">01</span>
             <h2>同一台主机，AI 与人并肩</h2>
-            <p class="highlight-lead">工程师与 AI Agent 都在调试主机上，同时连 relay / bridge——各走各的通道，目标却是同一块板子。</p>
+            <p class="highlight-lead">人与 AI 都在调试主机上，共用 Kit，对接板卡 × N——各走各的通道，并行不互斥。</p>
             <ul>
-              <li>AI 跑 HTTP 流水线，人开 Web 看串口输出</li>
-              <li>异常时人 SSH 介入，不中断 AI 已启动的流程</li>
-              <li>板卡网口 SSH：人 / AI 均可直连</li>
+              <li>AI：HTTP→串口控板，也可网口 SSH</li>
+              <li>人：Web / SSH；异常时可随时介入</li>
+              <li>电源 / Upgrade 经继电器；串口经 ssh-bridge；网口 SSH 直连</li>
             </ul>
           </article>
           <article class="highlight-card accent">
             <span class="highlight-num">02</span>
             <h2>分布式部署，远程也能协同</h2>
-            <p class="highlight-lead">调试主机接板子，AI 与工程师可在远端；通过 VPN 访问同一套 relay / bridge，协同方式不变。</p>
+            <p class="highlight-lead">人与 AI 不在调试主机；Kit + 板留守现场，经 LAN / VPN / frp 远程接入，协同方式不变。</p>
             <ul>
-              <li>远程 AI HTTP 控板，远程工程师 Web 旁观</li>
-              <li>跨网段访问板卡网口时，人 / AI 均可经<strong>可选跳板</strong></li>
-              <li>同网段则直连，无需跳板</li>
+              <li>远程 AI：HTTP→Kit→串口；也可网口 SSH</li>
+              <li>远程人：Web / SSH 旁观与介入</li>
+              <li>两条路始终可用：路径① 网口 SSH · 路径② HTTP→串口</li>
             </ul>
           </article>
         </div>
@@ -80,212 +80,356 @@
     <section id="architecture" class="section">
       <div class="wrap">
         <div class="section-head">
-          <span class="tag">Architecture</span>
-          <h2>AI 与人协同调试</h2>
-          <p>两种部署形态：同一台主机上并肩协作，或分布在不网段/不同机器上远程协同。AI 走 HTTP 自动化，人走 Web / SSH，<strong>并行不互斥</strong>。</p>
+          <span class="tag">Design</span>
+          <h2>产品设计框图</h2>
+          <p>人 / AI → Kit → 多板卡。AI 控板两条路：<strong>网口 SSH</strong>（高效）与 <strong>HTTP→串口</strong>（底层，无网可调 BL2/U-Boot/内核）。</p>
         </div>
 
-        <!-- 场景一：同一台主机 -->
+        <!-- 产品设计框图 -->
         <figure class="diagram">
           <figcaption>
-            <strong>场景一 · 同一台主机</strong>
-            <span>AI Agent 与工程师在同一台调试主机上，同时访问 relay / bridge；AI 自动化跑起来，人随时 Web 旁观或 SSH 介入</span>
+            <strong>人 / AI → Kit → 板卡 × N</strong>
+            <span>必选：电源 · Upgrade · 串口 · 网口；扩展：CAN / 485 · USB</span>
           </figcaption>
           <div class="legend">
-            <span><i class="dot human"></i>工程师</span>
-            <span><i class="dot ai"></i>AI Agent</span>
-            <span><i class="dot relay"></i>relay-c</span>
-            <span><i class="dot bridge"></i>ssh-bridge-c</span>
+            <span><i class="dot human"></i>人 · Web / SSH</span>
+            <span><i class="dot ai"></i>AI · HTTP / SSH</span>
+            <span><i class="dot relay"></i>继电器</span>
+            <span><i class="dot bridge"></i>ssh-bridge</span>
+            <span><i class="dot net"></i>路径① 网口 SSH</span>
+            <span><i class="dot bridge"></i>路径② HTTP→串口</span>
           </div>
           <div class="svg-box">
-            <svg viewBox="0 0 920 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="场景一 同一台主机 AI与人协同">
+            <svg viewBox="0 0 920 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="产品设计框图">
               <defs>
-                <marker id="h1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#7c3aed"/></marker>
-                <marker id="a1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#059669"/></marker>
-                <marker id="r1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#d97706"/></marker>
-                <marker id="b1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#0284c7"/></marker>
-                <marker id="n1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#db2777"/></marker>
+                <marker id="mk-h" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#7c3aed"/></marker>
+                <marker id="mk-a" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#059669"/></marker>
+                <marker id="mk-r" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#d97706"/></marker>
+                <marker id="mk-b" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#0284c7"/></marker>
+                <marker id="mk-n" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#db2777"/></marker>
               </defs>
-              <rect width="920" height="500" fill="#fafbfc" rx="8"/>
+              <rect width="920" height="720" fill="#fafbfc" rx="8"/>
 
-              <!-- Host boundary -->
-              <rect x="60" y="36" width="800" height="300" rx="14" fill="#f0f9ff" stroke="#0284c7" stroke-width="2"/>
-              <text x="80" y="60" fill="#0284c7" font-size="12" font-weight="700">同一台调试主机</text>
+              <!-- L3 -->
+              <rect x="48" y="20" width="824" height="96" rx="14" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+              <text x="68" y="44" fill="#64748b" font-size="11" font-weight="700">L3 · 人 × AI</text>
 
-              <!-- Row 1: Actors side by side -->
-              <rect x="100" y="88" width="150" height="72" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
-              <text x="175" y="118" text-anchor="middle" fill="#7c3aed" font-size="13" font-weight="700">工程师</text>
-              <text x="175" y="138" text-anchor="middle" fill="#64748b" font-size="10">Web 旁观 · SSH 交互</text>
+              <rect x="90" y="56" width="140" height="48" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+              <text x="160" y="76" text-anchor="middle" fill="#7c3aed" font-size="13" font-weight="700">人</text>
+              <text x="160" y="94" text-anchor="middle" fill="#64748b" font-size="11">Web / SSH</text>
 
-              <rect x="290" y="88" width="150" height="72" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
-              <text x="365" y="118" text-anchor="middle" fill="#059669" font-size="13" font-weight="700">AI Agent</text>
-              <text x="365" y="138" text-anchor="middle" fill="#64748b" font-size="10">HTTP 自动化 · SSH</text>
+              <rect x="260" y="56" width="140" height="48" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+              <text x="330" y="76" text-anchor="middle" fill="#059669" font-size="13" font-weight="700">AI</text>
+              <text x="330" y="94" text-anchor="middle" fill="#64748b" font-size="11">HTTP / SSH</text>
 
-              <!-- Collaboration banner -->
-              <rect x="480" y="96" width="340" height="56" rx="8" fill="#fff" stroke="#94a3b8" stroke-dasharray="4 3"/>
-              <text x="650" y="120" text-anchor="middle" fill="#475569" font-size="11" font-weight="700">协同：AI 跑流水线 · 人看 Dashboard · 异常时 SSH 接管</text>
-              <text x="650" y="140" text-anchor="middle" fill="#059669" font-size="10" font-weight="600">并行 · 不互斥</text>
+              <!-- AI 两条路径说明 -->
+              <rect x="430" y="52" width="420" height="56" rx="8" fill="#fff" stroke="#059669" stroke-width="1.2"/>
+              <text x="640" y="72" text-anchor="middle" fill="#059669" font-size="11" font-weight="700">AI 控板两条路</text>
+              <text x="450" y="94" fill="#db2777" font-size="10" font-weight="600">① 网口 SSH · 高效</text>
+              <text x="620" y="94" fill="#0284c7" font-size="10" font-weight="600">② HTTP→串口 · 底层 / 无网</text>
 
-              <!-- Row 2: Services -->
-              <rect x="180" y="210" width="220" height="96" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
-              <text x="290" y="238" text-anchor="middle" fill="#d97706" font-size="12" font-weight="700">relay-c</text>
-              <text x="230" y="260" text-anchor="middle" fill="#7c3aed" font-size="9">Web ← 工程师</text>
-              <text x="350" y="260" text-anchor="middle" fill="#059669" font-size="9">HTTP ← AI</text>
-              <text x="290" y="282" text-anchor="middle" fill="#64748b" font-size="10">电源 · reset · 烧录</text>
+              <!-- L2 -->
+              <rect x="48" y="140" width="824" height="200" rx="14" fill="#f0f9ff" stroke="#0284c7" stroke-width="2"/>
+              <text x="68" y="164" fill="#0284c7" font-size="11" font-weight="700">L2 · Embedded AI Development Kit · 可扩展组件集</text>
 
-              <rect x="520" y="210" width="260" height="96" rx="10" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.5"/>
-              <text x="650" y="238" text-anchor="middle" fill="#0284c7" font-size="12" font-weight="700">ssh-bridge-c</text>
-              <text x="570" y="260" text-anchor="middle" fill="#7c3aed" font-size="9">Web ← 工程师</text>
-              <text x="730" y="260" text-anchor="middle" fill="#059669" font-size="9">串口 HTTP ← AI</text>
-              <text x="650" y="282" text-anchor="middle" fill="#7c3aed" font-size="9">SSH 串口 ← 工程师</text>
+              <!-- 继电器 -->
+              <rect x="72" y="178" width="360" height="96" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+              <text x="252" y="202" text-anchor="middle" fill="#d97706" font-size="14" font-weight="700">继电器</text>
+              <text x="100" y="226" fill="#7c3aed" font-size="11">人：Web</text>
+              <text x="220" y="226" fill="#059669" font-size="11">AI：HTTP 接口</text>
+              <text x="252" y="252" text-anchor="middle" fill="#475569" font-size="11">电源开关 · 重启 · 进 Upgrade</text>
 
-              <!-- Actor → Service lines (clean vertical fan-out) -->
-              <line x1="175" y1="160" x2="175" y2="188" stroke="#7c3aed" stroke-width="1.5"/>
-              <line x1="175" y1="188" x2="230" y2="188" stroke="#7c3aed" stroke-width="1.5"/>
-              <line x1="230" y1="188" x2="230" y2="208" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#h1)"/>
-              <line x1="175" y1="188" x2="570" y2="188" stroke="#7c3aed" stroke-width="1.5"/>
-              <line x1="570" y1="188" x2="570" y2="208" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#h1)"/>
+              <!-- ssh-bridge -->
+              <rect x="460" y="178" width="388" height="96" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/>
+              <text x="654" y="202" text-anchor="middle" fill="#0284c7" font-size="14" font-weight="700">ssh-bridge</text>
+              <text x="488" y="226" fill="#7c3aed" font-size="11">人：Web / SSH</text>
+              <text x="640" y="226" fill="#059669" font-size="11">AI：HTTP 控串口</text>
+              <text x="654" y="252" text-anchor="middle" fill="#475569" font-size="11">路径② · BL2 / U-Boot / 内核</text>
 
-              <line x1="365" y1="160" x2="365" y2="188" stroke="#059669" stroke-width="1.5"/>
-              <line x1="365" y1="188" x2="350" y2="188" stroke="#059669" stroke-width="1.5"/>
-              <line x1="350" y1="188" x2="350" y2="208" stroke="#059669" stroke-width="1.5" marker-end="url(#a1)"/>
-              <line x1="365" y1="188" x2="730" y2="188" stroke="#059669" stroke-width="1.5"/>
-              <line x1="730" y1="188" x2="730" y2="208" stroke="#059669" stroke-width="1.5" marker-end="url(#a1)"/>
+              <!-- 扩展组件 -->
+              <rect x="72" y="286" width="100" height="36" rx="6" fill="#fff" stroke="#64748b"/>
+              <text x="122" y="309" text-anchor="middle" fill="#475569" font-size="12" font-weight="700">tftp</text>
+              <rect x="184" y="286" width="100" height="36" rx="6" fill="#fff" stroke="#64748b"/>
+              <text x="234" y="309" text-anchor="middle" fill="#475569" font-size="12" font-weight="700">nfs</text>
+              <rect x="296" y="286" width="100" height="36" rx="6" fill="#fff" stroke="#64748b"/>
+              <text x="346" y="309" text-anchor="middle" fill="#475569" font-size="12" font-weight="700">frp</text>
+              <rect x="408" y="286" width="440" height="36" rx="6" fill="#fff" stroke="#94a3b8" stroke-dasharray="5 3"/>
+              <text x="628" y="309" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="600">+ 更多组件（持续扩展）</text>
 
-              <!-- Service → Board -->
-              <line x1="290" y1="306" x2="290" y2="348" stroke="#d97706" stroke-width="2" marker-end="url(#r1)"/>
-              <line x1="650" y1="306" x2="650" y2="348" stroke="#0284c7" stroke-width="2" marker-end="url(#b1)"/>
+              <!-- L3 → L2 -->
+              <line x1="160" y1="104" x2="160" y2="124" stroke="#7c3aed" stroke-width="1.5"/>
+              <line x1="160" y1="124" x2="140" y2="124" stroke="#7c3aed" stroke-width="1.5"/>
+              <line x1="140" y1="124" x2="140" y2="176" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#mk-h)"/>
+              <line x1="160" y1="124" x2="540" y2="124" stroke="#7c3aed" stroke-width="1.5"/>
+              <line x1="540" y1="124" x2="540" y2="176" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#mk-h)"/>
 
-              <!-- Board zone -->
-              <rect x="100" y="360" width="720" height="108" rx="12" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
-              <text x="120" y="384" fill="#ea580c" font-size="11" font-weight="600">目标板卡（接在调试主机旁）</text>
+              <line x1="330" y1="104" x2="330" y2="124" stroke="#059669" stroke-width="1.5"/>
+              <line x1="330" y1="124" x2="310" y2="124" stroke="#059669" stroke-width="1.5"/>
+              <line x1="310" y1="124" x2="310" y2="176" stroke="#059669" stroke-width="1.5" marker-end="url(#mk-a)"/>
+              <line x1="330" y1="124" x2="760" y2="124" stroke="#059669" stroke-width="1.5"/>
+              <line x1="760" y1="124" x2="760" y2="176" stroke="#059669" stroke-width="1.5" marker-end="url(#mk-a)"/>
 
-              <rect x="140" y="400" width="180" height="48" rx="6" fill="#fffbeb" stroke="#d97706"/>
-              <text x="230" y="430" text-anchor="middle" fill="#d97706" font-size="11">电源 / 烧录 ← relay</text>
+              <!-- L2 → L1 bus -->
+              <line x1="252" y1="322" x2="252" y2="360" stroke="#d97706" stroke-width="2"/>
+              <line x1="654" y1="274" x2="654" y2="360" stroke="#0284c7" stroke-width="2"/>
+              <line x1="140" y1="360" x2="620" y2="360" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3"/>
+              <text x="460" y="354" text-anchor="middle" fill="#64748b" font-size="10">接板 × N</text>
 
-              <rect x="370" y="400" width="180" height="48" rx="6" fill="#f0f9ff" stroke="#0284c7"/>
-              <text x="460" y="430" text-anchor="middle" fill="#0284c7" font-size="11">串口 ← bridge</text>
+              <!-- L1 · 两块板 + N -->
+              <rect x="48" y="372" width="824" height="328" rx="14" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+              <text x="68" y="396" fill="#ea580c" font-size="11" font-weight="700">L1 · 目标板卡 × N（示意两块，数量不限）</text>
 
-              <rect x="600" y="400" width="200" height="48" rx="6" fill="#fdf2f8" stroke="#db2777"/>
-              <text x="700" y="430" text-anchor="middle" fill="#db2777" font-size="11">网口 SSH ← 人 / AI</text>
+              <!-- Board #1 -->
+              <rect x="72" y="412" width="360" height="168" rx="10" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/>
+              <text x="252" y="436" text-anchor="middle" fill="#9a3412" font-size="13" font-weight="700">Board #1</text>
 
-              <!-- Board SSH dashed lines from actors -->
-              <path d="M 175 160 Q 80 320 700 400" fill="none" stroke="#7c3aed" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#h1)"/>
-              <path d="M 365 160 Q 840 320 700 400" fill="none" stroke="#059669" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#a1)"/>
-              <text x="460" y="348" text-anchor="middle" fill="#64748b" font-size="9">板卡网口 SSH：工程师与 AI 均可直连</text>
+              <rect x="92" y="452" width="72" height="28" rx="4" fill="#fffbeb" stroke="#d97706"/>
+              <text x="128" y="471" text-anchor="middle" fill="#d97706" font-size="11" font-weight="700">电源</text>
+              <rect x="176" y="452" width="80" height="28" rx="4" fill="#fffbeb" stroke="#d97706"/>
+              <text x="216" y="471" text-anchor="middle" fill="#d97706" font-size="11" font-weight="700">Upgrade</text>
+              <rect x="268" y="452" width="64" height="28" rx="4" fill="#e0f2fe" stroke="#0284c7"/>
+              <text x="300" y="471" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="700">串口</text>
+              <rect x="344" y="452" width="64" height="28" rx="4" fill="#fdf2f8" stroke="#db2777"/>
+              <text x="376" y="471" text-anchor="middle" fill="#db2777" font-size="11" font-weight="700">网口</text>
+
+              <rect x="100" y="496" width="88" height="22" rx="3" fill="#fff" stroke="#94a3b8" stroke-dasharray="4 3"/>
+              <text x="144" y="512" text-anchor="middle" fill="#64748b" font-size="9">CAN / 485</text>
+              <rect x="200" y="496" width="56" height="22" rx="3" fill="#fff" stroke="#94a3b8" stroke-dasharray="4 3"/>
+              <text x="228" y="512" text-anchor="middle" fill="#64748b" font-size="9">USB</text>
+              <text x="300" y="512" fill="#94a3b8" font-size="9">扩展</text>
+
+              <text x="252" y="552" text-anchor="middle" fill="#c2410c" font-size="10">① SSH · ② 串口</text>
+
+              <!-- Board #2 -->
+              <rect x="456" y="412" width="360" height="168" rx="10" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/>
+              <text x="636" y="436" text-anchor="middle" fill="#9a3412" font-size="13" font-weight="700">Board #2</text>
+
+              <rect x="476" y="452" width="72" height="28" rx="4" fill="#fffbeb" stroke="#d97706"/>
+              <text x="512" y="471" text-anchor="middle" fill="#d97706" font-size="11" font-weight="700">电源</text>
+              <rect x="560" y="452" width="80" height="28" rx="4" fill="#fffbeb" stroke="#d97706"/>
+              <text x="600" y="471" text-anchor="middle" fill="#d97706" font-size="11" font-weight="700">Upgrade</text>
+              <rect x="652" y="452" width="64" height="28" rx="4" fill="#e0f2fe" stroke="#0284c7"/>
+              <text x="684" y="471" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="700">串口</text>
+              <rect x="728" y="452" width="64" height="28" rx="4" fill="#fdf2f8" stroke="#db2777"/>
+              <text x="760" y="471" text-anchor="middle" fill="#db2777" font-size="11" font-weight="700">网口</text>
+
+              <rect x="484" y="496" width="88" height="22" rx="3" fill="#fff" stroke="#94a3b8" stroke-dasharray="4 3"/>
+              <text x="528" y="512" text-anchor="middle" fill="#64748b" font-size="9">CAN / 485</text>
+              <rect x="584" y="496" width="56" height="22" rx="3" fill="#fff" stroke="#94a3b8" stroke-dasharray="4 3"/>
+              <text x="612" y="512" text-anchor="middle" fill="#64748b" font-size="9">USB</text>
+              <text x="684" y="512" fill="#94a3b8" font-size="9">扩展</text>
+
+              <text x="636" y="552" text-anchor="middle" fill="#c2410c" font-size="10">① SSH · ② 串口</text>
+
+              <!-- …N -->
+              <text x="840" y="500" text-anchor="middle" fill="#ea580c" font-size="22" font-weight="700">…</text>
+              <text x="840" y="524" text-anchor="middle" fill="#ea580c" font-size="11" font-weight="700">N</text>
+
+              <!-- Kit → boards fan-out -->
+              <line x1="252" y1="360" x2="128" y2="360" stroke="#d97706" stroke-width="1.5"/>
+              <line x1="128" y1="360" x2="128" y2="450" stroke="#d97706" stroke-width="1.5" marker-end="url(#mk-r)"/>
+              <line x1="252" y1="360" x2="216" y2="360" stroke="#d97706" stroke-width="1.5"/>
+              <line x1="216" y1="360" x2="216" y2="450" stroke="#d97706" stroke-width="1.5" marker-end="url(#mk-r)"/>
+              <line x1="252" y1="360" x2="512" y2="360" stroke="#d97706" stroke-width="1.5"/>
+              <line x1="512" y1="360" x2="512" y2="450" stroke="#d97706" stroke-width="1.5" marker-end="url(#mk-r)"/>
+              <line x1="600" y1="360" x2="600" y2="450" stroke="#d97706" stroke-width="1.5" marker-end="url(#mk-r)"/>
+
+              <line x1="654" y1="360" x2="300" y2="360" stroke="#0284c7" stroke-width="1.5"/>
+              <line x1="300" y1="360" x2="300" y2="450" stroke="#0284c7" stroke-width="1.5" marker-end="url(#mk-b)"/>
+              <line x1="654" y1="360" x2="684" y2="360" stroke="#0284c7" stroke-width="1.5"/>
+              <line x1="684" y1="360" x2="684" y2="450" stroke="#0284c7" stroke-width="1.5" marker-end="url(#mk-b)"/>
+
+              <!-- 路径说明条 -->
+              <rect x="72" y="596" width="744" height="84" rx="8" fill="#fff" stroke="#cbd5e1"/>
+              <text x="92" y="620" fill="#db2777" font-size="11" font-weight="700">路径① 网口 SSH</text>
+              <text x="220" y="620" fill="#64748b" font-size="11">AI / 人直连板卡 · 高效 · 需网络起来</text>
+              <text x="92" y="648" fill="#0284c7" font-size="11" font-weight="700">路径② HTTP→串口</text>
+              <text x="230" y="648" fill="#64748b" font-size="11">经 ssh-bridge · 底层 · 无网可调 BL2/BL3/U-Boot/ramdisk/内核</text>
+              <text x="92" y="668" fill="#94a3b8" font-size="10">人同样可用 Web/SSH 旁观串口；与 AI 并行不互斥</text>
+
+              <!-- 路径① 虚线 AI/人 → 网口 -->
+              <path d="M 160 104 Q 30 320 376 452" fill="none" stroke="#7c3aed" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#mk-h)"/>
+              <path d="M 330 104 Q 30 260 376 452" fill="none" stroke="#db2777" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#mk-n)"/>
+              <path d="M 330 104 Q 900 280 760 452" fill="none" stroke="#db2777" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#mk-n)"/>
             </svg>
           </div>
         </figure>
 
-        <!-- 场景二：分布式 -->
+        <div class="section-head" style="margin-top:40px">
+          <span class="tag">Deploy</span>
+          <h2>部署形态</h2>
+          <p><strong>场景一</strong>：人 / AI / Kit 同机。<strong>场景二</strong>：人 / AI 远程，Kit + 板留守现场。协同方式相同。</p>
+        </div>
+
+        <!-- 场景一：对照 · 同机 -->
         <figure class="diagram">
           <figcaption>
-            <strong>场景二 · 分布式部署</strong>
-            <span>AI 与工程师可在远程；调试主机唯一物理接板。远程协同同上——AI HTTP 自动化，人 Web 旁观；跨网段访问板卡网口 SSH 时经可选跳板</span>
+            <strong>场景一 · 同机（对照）</strong>
+            <span>人、AI、Kit 都在调试主机上；板卡物理挂在旁边</span>
           </figcaption>
           <div class="legend">
-            <span><i class="dot human"></i>工程师（本地/远程）</span>
-            <span><i class="dot ai"></i>AI Agent（本地/远程）</span>
-            <span><i class="dot jump"></i>跳板（跨网段可选）</span>
+            <span><i class="dot human"></i>人</span>
+            <span><i class="dot ai"></i>AI</span>
+            <span><i class="dot bridge"></i>Kit</span>
+            <span><i class="dot net"></i>① 网口 SSH</span>
           </div>
           <div class="svg-box">
-            <svg viewBox="0 0 920 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="场景二 分布式 AI与人协同">
+            <svg viewBox="0 0 920 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="场景一同机">
+              <defs>
+                <marker id="h1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#7c3aed"/></marker>
+                <marker id="a1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#059669"/></marker>
+                <marker id="k1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#0284c7"/></marker>
+                <marker id="n1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#db2777"/></marker>
+              </defs>
+              <rect width="920" height="420" fill="#fafbfc" rx="8"/>
+
+              <rect x="48" y="24" width="824" height="240" rx="14" fill="#f0f9ff" stroke="#0284c7" stroke-width="2"/>
+              <text x="68" y="48" fill="#0284c7" font-size="12" font-weight="700">同一台调试主机 · 人 / AI / Kit 共处</text>
+
+              <rect x="80" y="64" width="130" height="52" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+              <text x="145" y="86" text-anchor="middle" fill="#7c3aed" font-size="13" font-weight="700">人</text>
+              <text x="145" y="104" text-anchor="middle" fill="#64748b" font-size="10">Web / SSH</text>
+
+              <rect x="230" y="64" width="130" height="52" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+              <text x="295" y="86" text-anchor="middle" fill="#059669" font-size="13" font-weight="700">AI</text>
+              <text x="295" y="104" text-anchor="middle" fill="#64748b" font-size="10">HTTP / SSH</text>
+
+              <rect x="400" y="72" width="440" height="36" rx="8" fill="#fff" stroke="#cbd5e1"/>
+              <text x="620" y="95" text-anchor="middle" fill="#475569" font-size="12" font-weight="700">并行不互斥 · 无远程通道</text>
+
+              <rect x="80" y="140" width="760" height="100" rx="10" fill="#fff" stroke="#0284c7" stroke-width="1.5"/>
+              <text x="100" y="164" fill="#0284c7" font-size="11" font-weight="700">Kit</text>
+              <rect x="100" y="176" width="120" height="44" rx="6" fill="#fffbeb" stroke="#d97706"/>
+              <text x="160" y="203" text-anchor="middle" fill="#d97706" font-size="12" font-weight="700">继电器</text>
+              <rect x="236" y="176" width="130" height="44" rx="6" fill="#e0f2fe" stroke="#0284c7"/>
+              <text x="301" y="203" text-anchor="middle" fill="#0284c7" font-size="12" font-weight="700">ssh-bridge</text>
+              <rect x="382" y="176" width="70" height="44" rx="6" fill="#f8fafc" stroke="#64748b"/>
+              <text x="417" y="203" text-anchor="middle" fill="#475569" font-size="12" font-weight="700">tftp</text>
+              <rect x="468" y="176" width="70" height="44" rx="6" fill="#f8fafc" stroke="#64748b"/>
+              <text x="503" y="203" text-anchor="middle" fill="#475569" font-size="12" font-weight="700">nfs</text>
+              <rect x="554" y="176" width="70" height="44" rx="6" fill="#f8fafc" stroke="#64748b"/>
+              <text x="589" y="203" text-anchor="middle" fill="#475569" font-size="12" font-weight="700">frp</text>
+              <rect x="640" y="176" width="180" height="44" rx="6" fill="#fff" stroke="#94a3b8" stroke-dasharray="4 3"/>
+              <text x="730" y="203" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="700">+ 更多…</text>
+
+              <line x1="145" y1="116" x2="145" y2="132" stroke="#7c3aed" stroke-width="1.5"/>
+              <line x1="145" y1="132" x2="301" y2="132" stroke="#7c3aed" stroke-width="1.5"/>
+              <line x1="301" y1="132" x2="301" y2="138" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#h1)"/>
+              <line x1="295" y1="116" x2="295" y2="132" stroke="#059669" stroke-width="1.5"/>
+              <line x1="295" y1="132" x2="301" y2="132" stroke="#059669" stroke-width="1.5"/>
+              <line x1="460" y1="240" x2="460" y2="280" stroke="#0284c7" stroke-width="2" marker-end="url(#k1)"/>
+
+              <rect x="48" y="292" width="824" height="108" rx="12" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+              <text x="68" y="316" fill="#ea580c" font-size="11" font-weight="700">板卡 × N · 物理接在调试主机旁</text>
+              <rect x="80" y="332" width="260" height="48" rx="8" fill="#ffedd5" stroke="#ea580c"/>
+              <text x="210" y="361" text-anchor="middle" fill="#9a3412" font-size="13" font-weight="700">Board #1</text>
+              <rect x="360" y="332" width="260" height="48" rx="8" fill="#ffedd5" stroke="#ea580c"/>
+              <text x="490" y="361" text-anchor="middle" fill="#9a3412" font-size="13" font-weight="700">Board #2</text>
+              <text x="680" y="361" fill="#ea580c" font-size="18" font-weight="700">…N</text>
+
+              <path d="M 145 116 Q 40 250 210 332" fill="none" stroke="#db2777" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#n1)"/>
+              <path d="M 295 116 Q 40 200 210 332" fill="none" stroke="#db2777" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#n1)"/>
+              <text x="760" y="316" fill="#db2777" font-size="10" font-weight="600">① 网口 SSH</text>
+              <text x="760" y="334" fill="#0284c7" font-size="10" font-weight="600">② Kit→串口</text>
+            </svg>
+          </div>
+        </figure>
+
+        <!-- 场景二：分布式 · 主图 -->
+        <figure class="diagram">
+          <figcaption>
+            <strong>场景二 · 分布式（主形态）</strong>
+            <span>人与 AI 不在调试主机；Kit 跑在现场主机并接板；远程经 LAN / VPN / frp 到达 Kit</span>
+          </figcaption>
+          <div class="legend">
+            <span><i class="dot human"></i>人 · 远程机器</span>
+            <span><i class="dot ai"></i>AI · 远程机器</span>
+            <span><i class="dot bridge"></i>调试主机 · Kit</span>
+            <span><i class="dot jump"></i>网络 · LAN / VPN / frp</span>
+            <span><i class="dot net"></i>① 网口 SSH</span>
+          </div>
+          <div class="svg-box">
+            <svg viewBox="0 0 920 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="场景二 分布式">
               <defs>
                 <marker id="h2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#7c3aed"/></marker>
                 <marker id="a2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#059669"/></marker>
-                <marker id="r2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#d97706"/></marker>
-                <marker id="b2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#0284c7"/></marker>
+                <marker id="k2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#0284c7"/></marker>
                 <marker id="n2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#db2777"/></marker>
               </defs>
               <rect width="920" height="540" fill="#fafbfc" rx="8"/>
 
-              <!-- Remote zone -->
-              <rect x="60" y="36" width="800" height="128" rx="12" fill="#f8fafc" stroke="#94a3b8" stroke-dasharray="5 4"/>
-              <text x="80" y="58" fill="#64748b" font-size="11" font-weight="600">远程协同 · AI 与工程师可不在调试主机上</text>
+              <!-- 远程 -->
+              <rect x="48" y="20" width="824" height="100" rx="14" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 4"/>
+              <text x="68" y="44" fill="#64748b" font-size="11" font-weight="700">远程侧 · 人与 AI 各自机器 · 不在调试主机</text>
 
-              <rect x="100" y="78" width="150" height="68" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
-              <text x="175" y="106" text-anchor="middle" fill="#059669" font-size="12" font-weight="700">AI Agent · 远程</text>
-              <text x="175" y="126" text-anchor="middle" fill="#64748b" font-size="10">HTTP 调 relay / bridge</text>
+              <rect x="90" y="58" width="150" height="48" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+              <text x="165" y="78" text-anchor="middle" fill="#7c3aed" font-size="13" font-weight="700">人</text>
+              <text x="165" y="96" text-anchor="middle" fill="#64748b" font-size="11">Web / SSH</text>
 
-              <rect x="290" y="78" width="150" height="68" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
-              <text x="365" y="106" text-anchor="middle" fill="#7c3aed" font-size="12" font-weight="700">工程师 · 远程</text>
-              <text x="365" y="126" text-anchor="middle" fill="#64748b" font-size="10">Web 旁观 · SSH 介入</text>
+              <rect x="270" y="58" width="150" height="48" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+              <text x="345" y="78" text-anchor="middle" fill="#059669" font-size="13" font-weight="700">AI</text>
+              <text x="345" y="96" text-anchor="middle" fill="#64748b" font-size="11">HTTP / SSH</text>
 
-              <rect x="480" y="84" width="340" height="56" rx="8" fill="#fff" stroke="#cbd5e1"/>
-              <text x="650" y="108" text-anchor="middle" fill="#475569" font-size="11" font-weight="700">经 LAN / VPN 访问调试主机 · 协同方式与场景一相同</text>
-              <text x="650" y="128" text-anchor="middle" fill="#059669" font-size="10" font-weight="600">并行 · 不互斥</text>
+              <rect x="460" y="66" width="380" height="36" rx="8" fill="#fff" stroke="#cbd5e1"/>
+              <text x="650" y="89" text-anchor="middle" fill="#475569" font-size="12" font-weight="700">并行不互斥 · 协同方式与场景一相同</text>
 
-              <!-- Debug host -->
-              <rect x="60" y="188" width="800" height="168" rx="12" fill="#f0f9ff" stroke="#0284c7" stroke-width="2"/>
-              <text x="80" y="212" fill="#0284c7" font-size="12" font-weight="700">调试主机 · 唯一物理接板（USB 继电器 + 串口）</text>
+              <!-- 网络：与人/AI 对齐，覆盖落点 x=165 / 345 -->
+              <rect x="80" y="140" width="700" height="40" rx="10" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+              <text x="460" y="165" text-anchor="middle" fill="#a16207" font-size="13" font-weight="700">网络通道 · LAN / VPN / frp（Kit 组件）</text>
 
-              <rect x="180" y="240" width="220" height="88" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
-              <text x="290" y="268" text-anchor="middle" fill="#d97706" font-size="12" font-weight="700">relay-c</text>
-              <text x="230" y="290" text-anchor="middle" fill="#7c3aed" font-size="9">Web ← 工程师</text>
-              <text x="350" y="290" text-anchor="middle" fill="#059669" font-size="9">HTTP ← AI</text>
-              <text x="290" y="312" text-anchor="middle" fill="#64748b" font-size="10">电源 · reset · 烧录</text>
+              <line x1="165" y1="106" x2="165" y2="140" stroke="#7c3aed" stroke-width="1.5"/>
+              <line x1="345" y1="106" x2="345" y2="140" stroke="#059669" stroke-width="1.5"/>
+              <line x1="165" y1="180" x2="165" y2="196" stroke="#7c3aed" stroke-width="1.5"/>
+              <line x1="345" y1="180" x2="345" y2="196" stroke="#059669" stroke-width="1.5"/>
+              <line x1="165" y1="196" x2="460" y2="196" stroke="#94a3b8" stroke-width="1.5"/>
+              <line x1="345" y1="196" x2="460" y2="196" stroke="#94a3b8" stroke-width="1.5"/>
+              <line x1="460" y1="196" x2="460" y2="216" stroke="#0284c7" stroke-width="2" marker-end="url(#k2)"/>
 
-              <rect x="520" y="240" width="260" height="88" rx="10" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.5"/>
-              <text x="650" y="268" text-anchor="middle" fill="#0284c7" font-size="12" font-weight="700">ssh-bridge-c</text>
-              <text x="570" y="290" text-anchor="middle" fill="#7c3aed" font-size="9">Web ← 工程师</text>
-              <text x="730" y="290" text-anchor="middle" fill="#059669" font-size="9">串口 HTTP ← AI</text>
-              <text x="650" y="312" text-anchor="middle" fill="#7c3aed" font-size="9">SSH 串口 ← 工程师</text>
+              <!-- 现场 Kit -->
+              <rect x="48" y="224" width="824" height="128" rx="14" fill="#f0f9ff" stroke="#0284c7" stroke-width="2"/>
+              <text x="68" y="248" fill="#0284c7" font-size="11" font-weight="700">现场 · 调试主机 · 跑 Kit · 唯一物理接板</text>
 
-              <!-- Remote → host lines -->
-              <line x1="175" y1="146" x2="175" y2="168" stroke="#059669" stroke-width="1.5"/>
-              <line x1="175" y1="168" x2="350" y2="168" stroke="#059669" stroke-width="1.5"/>
-              <line x1="350" y1="168" x2="350" y2="238" stroke="#059669" stroke-width="1.5" marker-end="url(#a2)"/>
-              <line x1="175" y1="168" x2="730" y2="168" stroke="#059669" stroke-width="1.5"/>
-              <line x1="730" y1="168" x2="730" y2="238" stroke="#059669" stroke-width="1.5" marker-end="url(#a2)"/>
-              <text x="460" y="162" text-anchor="middle" fill="#64748b" font-size="9">LAN / VPN</text>
+              <rect x="80" y="264" width="760" height="68" rx="10" fill="#fff" stroke="#0284c7" stroke-width="1.5"/>
+              <text x="100" y="286" fill="#0284c7" font-size="11" font-weight="700">Kit</text>
+              <rect x="100" y="296" width="110" height="24" rx="5" fill="#fffbeb" stroke="#d97706"/>
+              <text x="155" y="313" text-anchor="middle" fill="#d97706" font-size="11" font-weight="700">继电器</text>
+              <rect x="226" y="296" width="120" height="24" rx="5" fill="#e0f2fe" stroke="#0284c7"/>
+              <text x="286" y="313" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="700">ssh-bridge</text>
+              <rect x="362" y="296" width="64" height="24" rx="5" fill="#f8fafc" stroke="#64748b"/>
+              <text x="394" y="313" text-anchor="middle" fill="#475569" font-size="11" font-weight="700">tftp</text>
+              <rect x="442" y="296" width="64" height="24" rx="5" fill="#f8fafc" stroke="#64748b"/>
+              <text x="474" y="313" text-anchor="middle" fill="#475569" font-size="11" font-weight="700">nfs</text>
+              <rect x="522" y="296" width="64" height="24" rx="5" fill="#fefce8" stroke="#ca8a04"/>
+              <text x="554" y="313" text-anchor="middle" fill="#a16207" font-size="11" font-weight="700">frp</text>
+              <rect x="602" y="296" width="220" height="24" rx="5" fill="#fff" stroke="#94a3b8" stroke-dasharray="4 3"/>
+              <text x="712" y="313" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="700">+ 更多…</text>
 
-              <line x1="365" y1="146" x2="365" y2="168" stroke="#7c3aed" stroke-width="1.5"/>
-              <line x1="365" y1="168" x2="230" y2="168" stroke="#7c3aed" stroke-width="1.5"/>
-              <line x1="230" y1="168" x2="230" y2="238" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#h2)"/>
-              <line x1="365" y1="168" x2="570" y2="168" stroke="#7c3aed" stroke-width="1.5"/>
-              <line x1="570" y1="168" x2="570" y2="238" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#h2)"/>
+              <line x1="460" y1="352" x2="460" y2="380" stroke="#0284c7" stroke-width="2" marker-end="url(#k2)"/>
+              <text x="480" y="372" fill="#0284c7" font-size="10" font-weight="600">物理线</text>
 
-              <!-- Host → board (physical) -->
-              <line x1="290" y1="328" x2="290" y2="368" stroke="#d97706" stroke-width="2" marker-end="url(#r2)"/>
-              <line x1="650" y1="328" x2="650" y2="368" stroke="#0284c7" stroke-width="2" marker-end="url(#b2)"/>
+              <!-- 板卡 -->
+              <rect x="48" y="388" width="824" height="88" rx="14" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+              <text x="68" y="412" fill="#ea580c" font-size="11" font-weight="700">板卡区 · 只挂在调试主机旁 · × N</text>
 
-              <!-- Optional jump -->
-              <rect x="280" y="372" width="360" height="56" rx="10" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5" stroke-dasharray="6 4"/>
-              <text x="460" y="396" text-anchor="middle" fill="#ca8a04" font-size="11" font-weight="700">可选跳板 · 仅跨网段时需要</text>
-              <text x="460" y="414" text-anchor="middle" fill="#64748b" font-size="9">板卡网口与 AI/人不在同一网段 → 经跳板 SSH；同网段 → 直连</text>
+              <rect x="100" y="428" width="240" height="32" rx="6" fill="#ffedd5" stroke="#ea580c"/>
+              <text x="220" y="449" text-anchor="middle" fill="#9a3412" font-size="12" font-weight="700">Board #1</text>
+              <rect x="360" y="428" width="240" height="32" rx="6" fill="#ffedd5" stroke="#ea580c"/>
+              <text x="480" y="449" text-anchor="middle" fill="#9a3412" font-size="12" font-weight="700">Board #2</text>
+              <text x="640" y="449" fill="#ea580c" font-size="16" font-weight="700">…N</text>
 
-              <!-- Board -->
-              <rect x="100" y="448" width="720" height="72" rx="12" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
-              <text x="120" y="472" fill="#ea580c" font-size="11" font-weight="600">目标板卡</text>
+              <!-- 路径①：右侧竖虚线，不交叉穿图 -->
+              <line x1="820" y1="82" x2="820" y2="444" stroke="#db2777" stroke-width="1.5" stroke-dasharray="5 4"/>
+              <line x1="820" y1="82" x2="420" y2="82" stroke="#db2777" stroke-width="1.2" stroke-dasharray="5 4"/>
+              <line x1="820" y1="444" x2="600" y2="444" stroke="#db2777" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#n2)"/>
+              <text x="830" y="200" fill="#db2777" font-size="10" font-weight="700">① 网口 SSH</text>
 
-              <rect x="140" y="482" width="160" height="28" rx="5" fill="#fffbeb" stroke="#d97706"/>
-              <text x="220" y="500" text-anchor="middle" fill="#d97706" font-size="10">电源 / 烧录 ← relay</text>
-
-              <rect x="340" y="482" width="160" height="28" rx="5" fill="#f0f9ff" stroke="#0284c7"/>
-              <text x="420" y="500" text-anchor="middle" fill="#0284c7" font-size="10">串口 ← bridge</text>
-
-              <rect x="540" y="482" width="260" height="28" rx="5" fill="#fdf2f8" stroke="#db2777"/>
-              <text x="670" y="500" text-anchor="middle" fill="#db2777" font-size="10">网口 SSH ← 人 / AI · 直连或经跳板</text>
-
-              <!-- SSH paths to board -->
-              <line x1="290" y1="368" x2="220" y2="368" stroke="#d97706" stroke-width="1.5"/>
-              <line x1="220" y1="368" x2="220" y2="480" stroke="#d97706" stroke-width="1.5" marker-end="url(#r2)"/>
-              <line x1="650" y1="368" x2="420" y2="368" stroke="#0284c7" stroke-width="1.5"/>
-              <line x1="420" y1="368" x2="420" y2="480" stroke="#0284c7" stroke-width="1.5" marker-end="url(#b2)"/>
-
-              <!-- Same-segment direct SSH -->
-              <path d="M 175 146 Q 80 300 670 482" fill="none" stroke="#059669" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#a2)"/>
-              <path d="M 365 146 Q 120 300 670 482" fill="none" stroke="#7c3aed" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#h2)"/>
-              <text x="760" y="430" fill="#db2777" font-size="9" font-weight="600">同网段直连</text>
-
-              <!-- Cross-segment via jump -->
-              <line x1="175" y1="146" x2="175" y2="400" stroke="#059669" stroke-width="1" stroke-dasharray="4 4" opacity="0.6"/>
-              <line x1="175" y1="400" x2="320" y2="400" stroke="#ca8a04" stroke-width="1.2" stroke-dasharray="4 4"/>
-              <line x1="365" y1="146" x2="365" y2="400" stroke="#7c3aed" stroke-width="1" stroke-dasharray="4 4" opacity="0.6"/>
-              <line x1="365" y1="400" x2="460" y2="400" stroke="#ca8a04" stroke-width="1.2" stroke-dasharray="4 4"/>
-              <line x1="460" y1="428" x2="460" y2="444" stroke="#ca8a04" stroke-width="1.5" stroke-dasharray="4 4"/>
-              <line x1="460" y1="444" x2="670" y2="482" stroke="#db2777" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#n2)"/>
-              <text x="760" y="456" fill="#ca8a04" font-size="9" font-weight="600">跨网段经跳板</text>
+              <!-- 底栏说明 -->
+              <text x="460" y="520" text-anchor="middle" fill="#64748b" font-size="11">
+                <tspan fill="#db2777" font-weight="700">① 网口 SSH</tspan>
+                <tspan>（右侧虚线）　</tspan>
+                <tspan fill="#0284c7" font-weight="700">② HTTP→Kit→串口</tspan>
+                <tspan>（中轴实线）</tspan>
+              </text>
             </svg>
           </div>
         </figure>
@@ -297,25 +441,25 @@
         <div class="section-head">
           <span class="tag">Products</span>
           <h2>工具组件</h2>
-          <p>可插拔的调试服务，随 Kit 持续扩展；以下为当前可用组件。</p>
+          <p>重点组件如下；另含 tftp · nfs · frp 等，持续扩展。</p>
         </div>
         <div class="product-grid">
           <article class="product-card relay">
-            <h3>relay-c</h3>
-            <p class="sub">继电器 · 电源 · 烧录模式 · :18053</p>
+            <h3>继电器</h3>
+            <p class="sub">电源开关 · 重启 · Upgrade · :18053</p>
             <ul>
-              <li><strong>AI</strong>：HTTP API 触发 reset / upgrade</li>
-              <li><strong>人</strong>：Web 控制页点按</li>
-              <li>USB 继电器 · boards.json</li>
+              <li><strong>人</strong>：Web 控制</li>
+              <li><strong>AI</strong>：HTTP 接口</li>
+              <li>对接各板：电源 · Upgrade</li>
             </ul>
           </article>
           <article class="product-card bridge">
-            <h3>ssh-bridge-c</h3>
-            <p class="sub">串口桥 · SSH Link · :18082</p>
+            <h3>ssh-bridge</h3>
+            <p class="sub">HTTP 控串口 · 无网可调启动前 · :18082</p>
             <ul>
-              <li><strong>AI</strong>：串口 HTTP 发令/读回</li>
-              <li><strong>人</strong>：Web 旁观 + SSH 交互串口</li>
-              <li>boards / ssh 通道 · config.json</li>
+              <li><strong>人</strong>：Web / SSH</li>
+              <li><strong>AI</strong>：HTTP 控串口（路径②）</li>
+              <li>BL2 / U-Boot / ramdisk / 内核</li>
             </ul>
           </article>
         </div>
@@ -333,8 +477,8 @@
           <div class="dl-card" data-product="relay-c">
             <div class="dl-icon relay">R</div>
             <div class="dl-body">
-              <strong>relay-c</strong>
-              <span>继电器控制 · Windows x64 zip</span>
+              <strong>继电器</strong>
+              <span>电源开关 · 重启 · Upgrade · Windows x64 zip</span>
             </div>
             <div class="dl-action">
               <span class="status-pill soon" data-status>即将上架</span>
@@ -344,8 +488,8 @@
           <div class="dl-card" data-product="ssh-bridge-c">
             <div class="dl-icon bridge">S</div>
             <div class="dl-body">
-              <strong>ssh-bridge-c</strong>
-              <span>SSH Bridge · Windows x64 zip</span>
+              <strong>ssh-bridge</strong>
+              <span>串口桥 · Windows x64 zip</span>
             </div>
             <div class="dl-action">
               <span class="status-pill soon" data-status>测试版</span>
